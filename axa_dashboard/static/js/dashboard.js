@@ -717,29 +717,23 @@ const ReinsuranceClaimReliefChart = ({ cobShares, theme }) => {
       const borderColor = isDark ? "#374151" : "#eceff5";
       const chartMode = isDark ? "dark" : "light";
 
-      // Derive claim amounts from ratios:
-      // grossClaims = grossLR/100 * GWP
-      // netClaims   = netLR/100 * NWP  where NWP = GWP*(1 - cessionRate/100)
-      // riRelief    = grossClaims - netClaims
-      const sorted = [...cobShares].sort((a, b) => {
-        const grossA = (a.grossLossRatio / 100) * a.gwp;
-        const grossB = (b.grossLossRatio / 100) * b.gwp;
-        return grossB - grossA;
+      const withRelief = cobShares.map(d => {
+        const grossClaims = (d.grossLossRatio / 100) * d.gwp;
+        const nwp = d.gwp * (1 - d.cessionRate / 100);
+        const netClaims = (d.netLossRatio / 100) * nwp;
+        const claimReliefPct = grossClaims > 0
+          ? Math.max(0, ((grossClaims - netClaims) / grossClaims) * 100)
+          : 0;
+        return { ...d, claimReliefPct: parseFloat(claimReliefPct.toFixed(2)) };
       });
 
-      const toB = (v) => parseFloat((v / 1e9).toFixed(1)); // convert to Miliar IDR
-
-      const grossClaims = sorted.map(d => toB((d.grossLossRatio / 100) * d.gwp));
-      const nwps = sorted.map(d => d.gwp * (1 - d.cessionRate / 100));
-      const netClaims = sorted.map((d, i) => toB((d.netLossRatio / 100) * nwps[i]));
-      const riRelief = sorted.map((d, i) => Math.max(0, toB(((d.grossLossRatio / 100) * d.gwp) - ((d.netLossRatio / 100) * nwps[i]))));
+      const sorted = [...withRelief].sort((a, b) => b.claimReliefPct - a.claimReliefPct);
 
       const options = {
-        series: [
-          { name: 'Gross Claims (Miliar IDR)', data: grossClaims },
-          { name: 'Net Claims (Miliar IDR)', data: netClaims },
-          { name: 'RI Claim Relief (Miliar IDR)', data: riRelief }
-        ],
+        series: [{
+          name: 'Claim Relief (% of Gross Claim)',
+          data: sorted.map(d => d.claimReliefPct)
+        }],
         chart: {
           type: 'bar',
           height: 320,
@@ -749,42 +743,29 @@ const ReinsuranceClaimReliefChart = ({ cobShares, theme }) => {
           fontFamily: "'Inter', sans-serif"
         },
         plotOptions: {
-          bar: { horizontal: false, columnWidth: '65%', borderRadius: 4 }
+          bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 }
         },
         dataLabels: { enabled: false },
-        stroke: { show: true, width: 2, colors: ['transparent'] },
+        stroke: { show: false },
         xaxis: {
           categories: sorted.map(d => d.cob),
           labels: { style: { colors: textColor, fontSize: '11px', fontWeight: 600 } }
         },
         yaxis: {
-          title: { text: 'Miliar IDR', style: { color: textColor, fontSize: '11px' } },
+          title: { text: 'Claim Relief (% of Gross Claim)', style: { color: textColor, fontSize: '11px' } },
           labels: {
-            formatter: (val) => val.toFixed(0) + 'B',
+            formatter: (val) => val.toFixed(0) + '%',
             style: { colors: textColor }
-          }
+          },
+          max: 60
         },
-        colors: ['#f43f5e', '#f97316', '#22c55e'],
+        colors: ['#22c55e'],
         grid: { borderColor: borderColor },
         theme: { mode: chartMode },
         tooltip: {
-          shared: true,
-          intersect: false,
-          y: { formatter: (val) => 'IDR ' + val.toFixed(1) + ' Miliar' }
+          y: { formatter: (val) => val.toFixed(2) + '% of Gross Claim' }
         },
-        legend: {
-          position: 'top',
-          horizontalAlign: 'center',
-          fontSize: '11px',
-          labels: { colors: textColor }
-        },
-        annotations: {
-          yaxis: [{
-            y: 0,
-            borderColor: isDark ? '#6b7280' : '#9ca3af',
-            borderWidth: 1
-          }]
-        }
+        legend: { show: false }
       };
 
       if (chartInstance.current) chartInstance.current.destroy();
@@ -830,12 +811,7 @@ const GrossNetLossRatioChart = ({ cobShares, theme }) => {
         plotOptions: {
           bar: { horizontal: false, columnWidth: '60%', borderRadius: 4 }
         },
-        dataLabels: {
-          enabled: true,
-          formatter: (val) => val.toFixed(0) + '%',
-          style: { fontSize: '9px', fontWeight: 700, colors: [isDark ? '#f3f4f6' : '#1f2937'] },
-          offsetY: -4
-        },
+        dataLabels: { enabled: false },
         stroke: { show: true, width: 2, colors: ['transparent'] },
         xaxis: {
           categories: sorted.map(d => d.cob),
@@ -851,25 +827,6 @@ const GrossNetLossRatioChart = ({ cobShares, theme }) => {
         colors: ['#ef4444', '#f97316'],
         grid: { borderColor: borderColor },
         theme: { mode: chartMode },
-        annotations: {
-          yaxis: [{
-            y: 60,
-            borderColor: '#6b7280',
-            borderWidth: 1.5,
-            strokeDashArray: 5,
-            label: {
-              text: 'Threshold 60%',
-              position: 'left',
-              offsetX: 6,
-              style: {
-                color: isDark ? '#9ca3af' : '#374151',
-                fontSize: '10px',
-                background: 'transparent',
-                border: 0
-              }
-            }
-          }]
-        },
         tooltip: {
           shared: true,
           intersect: false,
@@ -1160,7 +1117,7 @@ const OverviewSection = ({ data, theme }) => {
               <InfoTooltip
                 title="Reinsurance Claim Relief"
                 info="Porsi pemulihan beban klaim oleh reasuradur untuk setiap Class of Business (COB). Nilai persentase menunjukkan seberapa besar klaim yang diserap reasuradur."
-                formula="RI Recovery Claims / Gross Incurred Claims per COB"
+                formula="(Gross Claims − Net Claims) / Gross Claims × 100 per COB"
                 left={true}
               />
             </h3>
