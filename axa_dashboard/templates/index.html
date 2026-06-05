@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AXA Insurance Indonesia - Risk Portfolio & Underwriting Insights Dashboard</title>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Design System (Flask Static Folder) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  
+  <!-- ApexCharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  
+  <!-- Load React & ReactDOM CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Load Babel Standalone for in-browser JSX compiling -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  
+  <!-- React Mount Point -->
+  <div id="root"></div>
+
+  <!-- Floating Toggle Button for Mobile Navigation (controlled via DOM triggers in react/app script) -->
+  <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="document.querySelector('.sidebar').classList.toggle('active-sidebar')">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <!-- Load Actuarial Raw fallback data in case API fetches fails -->
+  <script src="{{ url_for('static', filename='js/data.js') }}" defer></script>
+  
+  <!-- Load Main React Application (Compiled via Babel in browser) -->
+  <script type="text/babel" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+</body>
+</html>
