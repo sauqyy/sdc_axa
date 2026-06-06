@@ -178,13 +178,7 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme }) => {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <svg viewBox="0 0 100 100" width="38" height="38" style={{ flexShrink: 0 }}>
-          <rect width="100" height="100" fill="#00008f" rx="8"/>
-          <text x="12" y="62" fontFamily="'Helvetica Neue', Arial, sans-serif" fontWeight="900" fontSize="34" fill="#ffffff" letterSpacing="-1">AXA</text>
-          <polygon points="70,12 88,12 88,30" fill="#e5002b"/>
-          <rect x="12" y="76" width="76" height="6" fill="#e5002b"/>
-        </svg>
-        <span>ACTUARIAL</span>
+        <img src="/static/AXA_Logo.svg" alt="AXA Logo" style={{ flexShrink: 0 }} />
       </div>
       
       <ul className="sidebar-menu">
@@ -209,17 +203,7 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme }) => {
         </li>
       </ul>
       
-      <div className="sidebar-footer">
-        <div className="theme-toggle-container">
-          <div className="theme-toggle-label">
-            <i className="fas fa-moon"></i> Mode Gelap
-          </div>
-          <label className="theme-switch">
-            <input type="checkbox" id="theme-toggle" checked={theme === 'dark'} onChange={toggleTheme} />
-            <span className="slider"></span>
-          </label>
-        </div>
-      </div>
+
     </aside>
   );
 };
@@ -2560,12 +2544,7 @@ const App = () => {
             <h1>{title}</h1>
             <p>{subtitle}</p>
           </div>
-          <div className="header-actions">
-            <div className="axa-badge">
-              <i className="fas fa-building-shield"></i>
-              <span>AXA React-Flask System</span>
-            </div>
-          </div>
+
         </header>
 
         {/* Content sections tabs switching */}

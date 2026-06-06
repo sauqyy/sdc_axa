@@ -193,7 +193,6 @@ a {
 .menu-item.active {
   background-color: var(--primary);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(67, 94, 190, 0.3);
 }
 
 .menu-item.active i {
