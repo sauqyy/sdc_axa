@@ -28463,6 +28463,78 @@
     {
       "term": "Claim Severity",
       "definition": "Rasio rata-rata besaran nominal kerugian per satu kali kejadian klaim (Total Nilai Klaim / Jumlah Klaim)."
+    },
+    {
+      "term": "COB (Class of Business)",
+      "definition": "Sub-kategori risiko dalam Lini Bisnis (Line of Business - LOB), contoh: Rekayasa (Engineering), Properti, Kendaraan Bermotor, dan Kesehatan."
+    },
+    {
+      "term": "BRANCH_",
+      "definition": "Kantor atau lokasi geografis tempat polis asuransi diterbitkan atau dikelola."
+    },
+    {
+      "term": "CHANNEL_",
+      "definition": "Saluran distribusi atau perantara yang digunakan untuk memasarkan dan menjual polis asuransi (misalnya Agen, Pialang/Broker, Bancassurance, atau Penjualan Langsung)."
+    },
+    {
+      "term": "PRODUCT_NAME",
+      "definition": "Nama produk asuransi spesifik yang terkait dengan polis pertanggungan."
+    },
+    {
+      "term": "POLICY_NO",
+      "definition": "Nomor identifikasi unik yang diterbitkan untuk setiap polis asuransi sebagai bukti cakupan perlindungan."
+    },
+    {
+      "term": "DT_INC",
+      "definition": "Tanggal dimulainya masa pertanggungan polis asuransi (saat cakupan perlindungan asuransi mulai berlaku)."
+    },
+    {
+      "term": "DT_END",
+      "definition": "Tanggal berakhirnya masa pertanggungan atau masa berlaku polis asuransi."
+    },
+    {
+      "term": "GWP_IDR",
+      "definition": "Total pendapatan premi kotor (Gross Written Premium) yang ditulis oleh perusahaan sebelum dikurangi porsi reasuransi, dinyatakan dalam Rupiah."
+    },
+    {
+      "term": "RWP_IDR",
+      "definition": "Bagian premi (Reinsurance Written Premium) yang diserahkan kepada perusahaan reasuransi untuk mentransfer sebagian risiko kerugian, dinyatakan dalam Rupiah."
+    },
+    {
+      "term": "GWC_IDR",
+      "definition": "Biaya komisi premi kotor (Gross Written Commission) yang dibayarkan kepada perantara (seperti agen atau broker), dinyatakan dalam Rupiah."
+    },
+    {
+      "term": "RWC_IDR",
+      "definition": "Komisi reasuransi (Reinsurance Commission) yang diterima dari reasuradur atau dibayarkan kepada reasuradur terkait premi yang diserahkan, dinyatakan dalam Rupiah."
+    },
+    {
+      "term": "SUM_INSURED",
+      "definition": "Nilai uang pertanggungan atau batas liabilitas finansial maksimum yang ditanggung oleh perusahaan asuransi atas polis."
+    },
+    {
+      "term": "CLM_REF",
+      "definition": "Nomor referensi atau kode unik yang digunakan untuk mengidentifikasi laporan kejadian klaim."
+    },
+    {
+      "term": "DT_CLM",
+      "definition": "Tanggal terjadinya peristiwa kerugian atau kecelakaan/insiden yang menjadi dasar pengajuan klaim."
+    },
+    {
+      "term": "GRS_OS_IDR",
+      "definition": "Total cadangan klaim kotor outstanding (Gross Outstanding Claims) yang masih dalam proses penyelesaian sebelum dikurangi porsi reasuransi, dinyatakan dalam Rupiah."
+    },
+    {
+      "term": "RI_OS_IDR",
+      "definition": "Porsi cadangan klaim outstanding (Net Outstanding Claims) yang dapat dipulihkan/ditagih dari pihak reasuradur (Reinsurance recoverables), dinyatakan dalam Rupiah."
+    },
+    {
+      "term": "GRS_ST_IDR",
+      "definition": "Total klaim kotor yang telah dibayarkan (Gross Paid Claims) kepada pemegang polis sebelum memperhitungkan pemulihan reasuransi, dinyatakan dalam Rupiah."
+    },
+    {
+      "term": "RI_ST_IDR",
+      "definition": "Porsi nominal klaim yang telah dibayarkan yang dipulihkan/diterima kembali dari pihak reasuradur (Reinsurance recoveries), dinyatakan dalam Rupiah."
     }
   ],
   "cobShares": [

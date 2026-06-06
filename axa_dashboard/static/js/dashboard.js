@@ -214,7 +214,7 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme }) => {
           <i className="fas fa-chart-line"></i> Tren &amp; Konsentrasi Risiko
         </li>
         <li className={`menu-item ${activeTab === 'drilldown' ? 'active' : ''}`} onClick={() => handleMenuClick('drilldown')}>
-          <i class="fas fa-magnifying-glass-chart"></i> Investigasi Drill-Down
+          <i class="fas fa-magnifying-glass-chart"></i> Root Cause Analysis
         </li>
         <li className={`menu-item ${activeTab === 'strategy' ? 'active' : ''}`} onClick={() => handleMenuClick('strategy')}>
           <i class="fas fa-shield-halved"></i> Rekomendasi Strategis
@@ -1838,7 +1838,7 @@ const DrillDownSection = ({ rawData }) => {
           <h3>
             <i className="fas fa-list-ol"></i> Segmen Terburuk Portofolio (Berdasarkan {basis === 'gross' ? 'Gross' : 'Net'} Loss Ratio Underwriting, GWP &gt; 100Juta)
             <InfoTooltip
-              title="Tabel Investigasi Drill-Down"
+              title="Tabel Root Cause Analysis"
               info="Rincian data portofolio dari tingkat COB hingga kombinasi cabang, channel, dan produk untuk melacak anomali kerugian."
               formula="Penyaringan data berdasar GWP > 100 Juta, diurutkan dari Loss Ratio tertinggi"
               left={true}
@@ -2670,8 +2670,8 @@ const StrategySection = () => {
       <div className="strategy-tab-buttons">
         <button className={`strat-tab-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Semua Rekomendasi</button>
         <button className={`strat-tab-btn ${filter === 'recom-urgent' ? 'active' : ''}`} onClick={() => setFilter('recom-urgent')}>Underwriting & Pricing</button>
-        <button className={`strat-tab-btn ${filter === 'recom-opt' ? 'active' : ''}`} onClick={() => setFilter('recom-opt')}>Restrukturisasi Reasuransi</button>
-        <button className={`strat-tab-btn ${filter === 'recom-growth' ? 'active' : ''}`} onClick={() => setFilter('recom-growth')}>Ekspansi Bisnis</button>
+        <button className={`strat-tab-btn ${filter === 'recom-opt' ? 'active' : ''}`} onClick={() => setFilter('recom-opt')}>Reinsurance Strategy</button>
+        <button className={`strat-tab-btn ${filter === 'recom-growth' ? 'active' : ''}`} onClick={() => setFilter('recom-growth')}>Portfolio Management</button>
       </div>
 
       <div className="recom-container">
@@ -2729,6 +2729,92 @@ const StrategySection = () => {
               <li>Berikan insentif komisi tambahan (*acquisition bonus*) bagi agen atau broker yang berhasil menjual produk COB 9.</li>
               <li>Gencarkan promosi pemasaran digital di daerah dengan profil risiko stabil untuk memperbesar market share COB 9.</li>
               <li>Pertahankan lini bisnis COB 8, COB 5, dan COB 3 yang tergolong dalam *Stable Segment* karena memberikan kontribusi margin underwriting yang konsisten meskipun volume bisnisnya kecil.</li>
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const StrategySectionV2 = () => {
+  const [filter, setFilter] = useState("all");
+
+  return (
+    <div>
+      <div className="strategy-tab-buttons">
+        <button className={`strat-tab-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Semua Rekomendasi</button>
+        <button className={`strat-tab-btn ${filter === 'recom-urgent' ? 'active' : ''}`} onClick={() => setFilter('recom-urgent')}>Underwriting & Pricing</button>
+        <button className={`strat-tab-btn ${filter === 'recom-opt' ? 'active' : ''}`} onClick={() => setFilter('recom-opt')}>Reinsurance Strategy</button>
+        <button className={`strat-tab-btn ${filter === 'recom-growth' ? 'active' : ''}`} onClick={() => setFilter('recom-growth')}>Portfolio Management</button>
+      </div>
+
+      <div className="recom-container">
+        {(filter === 'all' || filter === 'recom-urgent') && (
+          <div className="recom-item recom-urgent">
+            <div className="recom-header">
+              <span className="recom-area">Underwriting &amp; Pricing</span>
+              <span className="recom-badge badge-urgent">Pengendalian Segmen Berisiko Tinggi</span>
+            </div>
+            <h4>Fokus Perbaikan pada Branch K × Channel B</h4>
+            <p>
+              Hasil analisis drill-down menunjukkan bahwa tekanan terbesar terhadap profitabilitas portofolio berasal dari kombinasi <strong>COB 6 – Product1217</strong> dan <strong>COB 7 – Product0221</strong> pada <strong>Branch K</strong> melalui <strong>Channel B</strong>.
+            </p>
+            <p>
+              Segmen <strong>COB 6 – Product1217</strong> menghasilkan premi sebesar <strong>IDR 1,74 miliar</strong>, namun mencatat klaim sebesar <strong>IDR 366,46 miliar</strong> dengan <strong>Loss Ratio 21.083%</strong>. Sementara itu, <strong>COB 7 – Product0221</strong> mencatat <strong>Loss Ratio 1.765%</strong> dengan total klaim mencapai <strong>IDR 177,95 miliar</strong>. Temuan ini menunjukkan adanya konsentrasi risiko yang sangat tinggi pada kombinasi cabang, channel, dan produk tertentu.
+            </p>
+            <p style={{ marginTop: '0.6rem', fontWeight: 600 }}>Langkah Konkret:</p>
+            <ul style={{ marginLeft: '1.5rem', marginTop: '0.4rem', fontSize: '0.88rem', lineHeight: '1.5', listStyleType: 'square' }}>
+              <li>Perketat proses underwriting untuk bisnis baru yang berasal dari Branch K dan Channel B.</li>
+              <li>Lakukan review terhadap kecukupan tarif premi pada Product1217 dan Product0221 berdasarkan pengalaman klaim aktual.</li>
+              <li>Terapkan pemantauan khusus terhadap segmen dengan loss ratio tinggi melalui indikator loss ratio, claim frequency, dan claim severity.</li>
+              <li>Pisahkan analisis large claim dan non-large claim untuk memastikan keputusan underwriting tidak terdistorsi oleh klaim dengan nilai yang sangat besar.</li>
+            </ul>
+          </div>
+        )}
+
+        {(filter === 'all' || filter === 'recom-opt') && (
+          <div className="recom-item recom-opt">
+            <div className="recom-header">
+              <span className="recom-area">Reinsurance Strategy</span>
+              <span className="recom-badge badge-opt">Optimalisasi Efektivitas Transfer Risiko</span>
+            </div>
+            <h4>Memastikan Reasuransi Memberikan Nilai Tambah terhadap Portofolio</h4>
+            <p>
+              Analisis menunjukkan bahwa AXA mengalihkan sekitar <strong>21,77% premi (IDR 546,6 miliar)</strong> ke reasuransi, namun hanya memperoleh <strong>7,19% pemulihan klaim (IDR 89,1 miliar)</strong> dari total klaim yang terjadi.
+            </p>
+            <p>
+              Akibatnya, <strong>Net Loss Ratio meningkat menjadi 58,54%</strong>, lebih tinggi dibandingkan <strong>Gross Loss Ratio sebesar 49,34%</strong>. Hal ini mengindikasikan bahwa manfaat proteksi yang diperoleh belum sepenuhnya sebanding dengan biaya reasuransi yang dikeluarkan.
+            </p>
+            <p style={{ marginTop: '0.6rem', fontWeight: 600 }}>Langkah Konkret:</p>
+            <ul style={{ marginLeft: '1.5rem', marginTop: '0.4rem', fontSize: '0.88rem', lineHeight: '1.5', listStyleType: 'square' }}>
+              <li>Evaluasi kembali efektivitas program reasuransi pada setiap lini bisnis berdasarkan kontribusinya terhadap profitabilitas portofolio.</li>
+              <li>Tingkatkan fokus reasuransi pada segmen dengan claim severity tinggi dan volatilitas klaim yang besar.</li>
+              <li>Pertimbangkan peningkatan retensi pada lini bisnis dengan loss ratio rendah dan performa yang stabil, seperti COB 9.</li>
+              <li>Gunakan hasil analisis loss ratio dan claim severity sebagai dasar dalam evaluasi maupun negosiasi program reasuransi berikutnya.</li>
+            </ul>
+          </div>
+        )}
+
+        {(filter === 'all' || filter === 'recom-growth') && (
+          <div className="recom-item recom-growth">
+            <div className="recom-header">
+              <span className="recom-area">Portfolio Management</span>
+              <span className="recom-badge badge-growth">Penguatan Segmen dengan Kinerja Terbaik</span>
+            </div>
+            <h4>Mendorong Pertumbuhan pada Portofolio yang Profitabel</h4>
+            <p>
+              Hasil Risk Profile Mapping menunjukkan bahwa <strong>COB 9</strong> merupakan segmen dengan kontribusi premi terbesar, yaitu <strong>IDR 762,4 miliar</strong>, serta memiliki <strong>Loss Ratio sebesar 17,14%</strong>, jauh di bawah rata-rata portofolio.
+            </p>
+            <p>
+              Selain <strong>COB 9</strong>, segmen <strong>COB 1, COB 8, dan COB 10</strong> juga menunjukkan profil risiko yang relatif sehat dan konsisten sehingga berperan penting dalam menjaga stabilitas profitabilitas portofolio.
+            </p>
+            <p style={{ marginTop: '0.6rem', fontWeight: 600 }}>Langkah Konkret:</p>
+            <ul style={{ marginLeft: '1.5rem', marginTop: '0.4rem', fontSize: '0.88rem', lineHeight: '1.5', listStyleType: 'square' }}>
+              <li>Jadikan COB 9 sebagai prioritas utama dalam pengembangan portofolio karena memiliki kombinasi volume premi tinggi dan tingkat klaim yang rendah.</li>
+              <li>Arahkan kapasitas distribusi dan pengembangan bisnis pada segmen yang berada dalam kategori Strategic Segment.</li>
+              <li>Pertahankan kontribusi COB 1, COB 8, dan COB 10 sebagai penyeimbang risiko portofolio.</li>
+              <li>Alokasikan sumber daya bisnis secara lebih selektif pada lini bisnis yang menunjukkan kualitas underwriting dan profitabilitas yang baik.</li>
             </ul>
           </div>
         )}
@@ -2822,7 +2908,7 @@ const App = () => {
       case "concentration":
         return { title: "Tren & Konsentrasi Risiko", subtitle: "Visualisasi Pangsa Risiko, Tren Underwriting Loss Ratio, dan Efikasi Reasuransi" };
       case "drilldown":
-        return { title: "Investigasi Drill-Down", subtitle: "Menganalisis Lini Kerugian Terburuk Berdasarkan Cabang, Channel, dan Produk" };
+        return { title: "Root Cause Analysis", subtitle: "Menganalisis akar penyebab kerugian berdasarkan cabang, channel, dan produk" };
       case "strategy":
         return { title: "Rekomendasi Strategis", subtitle: "Rencana Aksi Aktuaris dan Rekomendasi Underwriting, Pricing, & Reasuransi" };
       case "glossary":
@@ -2875,7 +2961,7 @@ const App = () => {
           {activeTab === "matrix" && <RiskMatrixSection cobList={data.cobPortfolio} theme={theme} />}
           {activeTab === "concentration" && <ConcentrationSection data={data} theme={theme} />}
           {activeTab === "drilldown" && <DrillDownSection rawData={data} />}
-          {activeTab === "strategy" && <StrategySection />}
+          {activeTab === "strategy" && <StrategySectionV2 />}
           {activeTab === "glossary" && <GlossarySection glossary={data.glossary} />}
         </div>
       </main>
