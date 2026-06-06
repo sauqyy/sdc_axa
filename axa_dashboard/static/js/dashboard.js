@@ -14,6 +14,27 @@ function formatCurrency(val) {
   return "IDR " + val.toLocaleString("id-ID");
 }
 
+function formatExposureCompact(val) {
+  if (val === undefined || val === null) return "-";
+  if (val >= 1e15) {
+    return "IDR " + (val / 1e15).toFixed(2) + " P";
+  } else if (val >= 1e12) {
+    return "IDR " + (val / 1e12).toFixed(1) + " T";
+  } else if (val >= 1e9) {
+    return "IDR " + (val / 1e9).toFixed(1) + " M";
+  }
+  return "IDR " + val.toLocaleString("id-ID");
+}
+
+function calculateMedian(values) {
+  if (!values || values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
 // --- Component: Info Tooltip ---
 // Renders a ℹ️ icon; on hover shows a popup with title, explanation, and optional formula.
 const InfoTooltip = ({ title, info, formula, left }) => (
@@ -454,11 +475,11 @@ const RiskBubbleChart = ({ cobList, theme }) => {
           width: 1.5,
           colors: isDark ? ['#1f2937'] : ['#ffffff'] // matches bg-card
         },
-        dataLabels: {
-          enabled: true,
-          formatter: function (val, opt) {
-            return opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex].name;
-          },
+      dataLabels: {
+        enabled: true,
+        formatter: function (val, opt) {
+          return opt.w.config.series?.[opt.seriesIndex]?.data?.[opt.dataPointIndex]?.name || "";
+        },
           style: {
             fontSize: '11px',
             fontFamily: "'Inter', sans-serif",
@@ -676,6 +697,285 @@ const RiskBubbleChart = ({ cobList, theme }) => {
       chartInstance.current = new ApexCharts(chartRef.current, options);
       chartInstance.current.render();
     }
+
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+        chartInstance.current = null;
+      }
+    };
+  }, [cobList, theme]);
+
+  return <div ref={chartRef}></div>;
+};
+
+const NotebookRiskBubbleChart = ({ cobList, theme }) => {
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+
+  useEffect(() => {
+    if (!chartRef.current || !cobList || cobList.length === 0) return;
+
+    const isDark = theme === "dark";
+    const textColor = isDark ? "#9ca3af" : "#334155";
+    const borderColor = isDark ? "#374151" : "#cbd5e1";
+    const chartMode = isDark ? "dark" : "light";
+    const lossRatioThreshold = 60;
+    const exposureValues = cobList.map(item => item.exposure).filter(val => val > 0);
+    const exposureThreshold = calculateMedian(exposureValues);
+    const minExposure = Math.min(...exposureValues);
+    const maxExposure = Math.max(...exposureValues);
+    const xMin = Math.log10(minExposure * 0.1);
+    const xMax = Math.log10(maxExposure * 10);
+    const thresholdLog = Math.log10(exposureThreshold);
+    const leftMidX = (xMin + thresholdLog) / 2;
+    const rightMidX = (thresholdLog + xMax) / 2;
+    const topMidY = (lossRatioThreshold + 110) / 2;
+    const bottomMidY = lossRatioThreshold / 2;
+
+    const palette = {
+      "Critical Risk": "#e74c3c",
+      "Strategic Segment": "#2ecc71",
+      "Stable Segment": "#3498db",
+      "Inefficient Segment": "#f39c12"
+    };
+
+    const seriesMap = {
+      "Critical Risk": [],
+      "Strategic Segment": [],
+      "Stable Segment": [],
+      "Inefficient Segment": []
+    };
+
+    cobList.forEach(item => {
+      const point = {
+        x: parseFloat(Math.log10(item.exposure).toFixed(4)),
+        y: parseFloat(item.lossRatio.toFixed(2)),
+        z: parseFloat((item.gwp / 1e9).toFixed(2)),
+        name: item.cob,
+        gwpRaw: item.gwp,
+        exposureRaw: item.exposure,
+        claimsRaw: item.grossClaims,
+        claimCount: item.claimCount,
+        risk: item.riskCategory
+      };
+
+      if (seriesMap[item.riskCategory]) {
+        seriesMap[item.riskCategory].push(point);
+      }
+    });
+
+    const options = {
+      series: [
+        { name: 'Critical Risk (High Exposure, High Loss)', data: seriesMap["Critical Risk"] },
+        { name: 'Strategic Segment (High Exposure, Low Loss)', data: seriesMap["Strategic Segment"] },
+        { name: 'Stable Segment (Low Exposure, Low Loss)', data: seriesMap["Stable Segment"] },
+        { name: 'Inefficient Segment (Low Exposure, High Loss)', data: seriesMap["Inefficient Segment"] }
+      ],
+      chart: {
+        height: 420,
+        type: 'bubble',
+        toolbar: { show: true },
+        background: 'transparent',
+        foreColor: textColor,
+        fontFamily: "'Inter', 'Nunito', sans-serif"
+      },
+      plotOptions: {
+        bubble: {
+          minBubbleRadius: 14,
+          maxBubbleRadius: 42
+        }
+      },
+      stroke: {
+        width: 1.5,
+        colors: isDark ? ['#1f2937'] : ['#ffffff']
+      },
+      dataLabels: {
+        enabled: false,
+        style: {
+          fontSize: '11px',
+          fontFamily: "'Inter', sans-serif",
+          fontWeight: 800,
+          colors: [isDark ? '#e2e8f0' : '#0f172a']
+        },
+        background: {
+          enabled: true,
+          foreColor: isDark ? '#e2e8f0' : '#0f172a',
+          padding: 4,
+          borderRadius: 3,
+          borderWidth: 1,
+          borderColor: '#94a3b8',
+          opacity: 0.95,
+          backgroundColor: isDark ? '#0f172a' : '#ffffff'
+        }
+      },
+      fill: { opacity: 0.85 },
+      xaxis: {
+        type: 'numeric',
+        min: xMin,
+        max: xMax,
+        tickAmount: Math.max(4, Math.ceil(xMax - xMin)),
+        title: {
+          text: 'Eksposur / Sum Insured (Skala Logaritmik, IDR)',
+          style: { fontSize: '13px', fontWeight: 700, color: textColor }
+        },
+        labels: {
+          show: true,
+          style: {
+            colors: textColor,
+            fontSize: '11px',
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 600
+          },
+          formatter: function (val) {
+            return formatExposureCompact(Math.pow(10, val));
+          }
+        },
+        axisBorder: {
+          show: true,
+          color: borderColor
+        },
+        axisTicks: {
+          show: true,
+          color: borderColor
+        }
+      },
+      yaxis: {
+        max: 110,
+        min: 0,
+        tickAmount: 6,
+        title: {
+          text: 'Gross Loss Ratio (%)',
+          style: { fontSize: '13px', fontWeight: 700, color: textColor }
+        },
+        labels: {
+          show: true,
+          style: {
+            colors: textColor,
+            fontSize: '11px',
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 600
+          },
+          formatter: function (val) { return val + "%"; }
+        },
+        axisBorder: {
+          show: true,
+          color: borderColor
+        },
+        axisTicks: {
+          show: true,
+          color: borderColor
+        }
+      },
+      colors: [
+        palette["Critical Risk"],
+        palette["Strategic Segment"],
+        palette["Stable Segment"],
+        palette["Inefficient Segment"]
+      ],
+      grid: { borderColor: borderColor },
+      annotations: {
+        position: 'front',
+        yaxis: [{
+          y: lossRatioThreshold,
+          borderColor: '#64748b',
+          borderWidth: 1.5,
+          strokeDashArray: 4,
+          label: {
+            borderColor: 'transparent',
+            style: { color: '#64748b', background: 'transparent', fontSize: '10px', fontWeight: 700 },
+            text: `Loss Ratio Threshold (${lossRatioThreshold}%)`,
+            position: 'left',
+            offsetX: 10,
+            offsetY: -8
+          }
+        }],
+        xaxis: [{
+          x: thresholdLog,
+          borderColor: '#64748b',
+          borderWidth: 1.5,
+          strokeDashArray: 4,
+          label: {
+            borderColor: 'transparent',
+            orientation: 'vertical',
+            style: { color: '#64748b', background: 'transparent', fontSize: '10px', fontWeight: 700 },
+            text: `Median Exposure (${formatExposureCompact(exposureThreshold)})`,
+            position: 'top',
+            offsetX: -10,
+            offsetY: 10
+          }
+        }],
+        points: [
+          { x: leftMidX, y: topMidY + 5, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#f97316' : '#ea580c', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'INEFFICIENT SEGMENT' } },
+          { x: leftMidX, y: topMidY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(Low Exposure, High Loss)' } },
+          { x: rightMidX, y: topMidY + 5, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#f43f5e' : '#e11d48', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'CRITICAL RISK' } },
+          { x: rightMidX, y: topMidY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(High Exposure, High Loss)' } },
+          { x: leftMidX, y: bottomMidY + 5, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#38bdf8' : '#0284c7', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'STABLE SEGMENT' } },
+          { x: leftMidX, y: bottomMidY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(Low Exposure, Low Loss)' } },
+          { x: rightMidX, y: bottomMidY + 5, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#34d399' : '#16a34a', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'STRATEGIC SEGMENT' } },
+          { x: rightMidX, y: bottomMidY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(High Exposure, Low Loss)' } },
+          ...cobList.map(item => {
+            const offsets = {
+              "COB 6": { offsetX: 18, offsetY: -10 },
+              "COB 4": { offsetX: -18, offsetY: 8 },
+              "COB 9": { offsetX: 14, offsetY: -8 },
+              "COB 10": { offsetX: 14, offsetY: -8 },
+              "COB 1": { offsetX: -14, offsetY: -8 },
+              "COB 8": { offsetX: 14, offsetY: -8 },
+              "COB 5": { offsetX: -14, offsetY: -8 },
+              "COB 3": { offsetX: 0, offsetY: 14 },
+              "COB 2": { offsetX: 14, offsetY: -8 },
+              "COB 7": { offsetX: 0, offsetY: 14 }
+            }[item.cob] || { offsetX: 0, offsetY: -8 };
+
+            return {
+              x: parseFloat(Math.log10(item.exposure).toFixed(4)),
+              y: parseFloat(item.lossRatio.toFixed(2)),
+              marker: { size: 0 },
+              label: {
+                text: item.cob,
+                offsetX: offsets.offsetX,
+                offsetY: offsets.offsetY,
+                borderColor: '#94a3b8',
+                style: {
+                  color: isDark ? '#e2e8f0' : '#0f172a',
+                  background: isDark ? '#0f172a' : '#ffffff',
+                  fontSize: '10px',
+                  fontWeight: 800
+                }
+              }
+            };
+          })
+        ]
+      },
+      legend: { show: false },
+      tooltip: {
+        custom: function ({ seriesIndex, dataPointIndex, w }) {
+          const item = w.config.series[seriesIndex].data[dataPointIndex];
+          return `
+            <div class="bubble-tooltip-card" style="padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: var(--shadow-md); color: var(--text-main);">
+              <div style="font-weight: 800; font-size: 14px; color: var(--text-title); border-bottom: 1px solid var(--border-color); padding-bottom: 4px; margin-bottom: 6px;">
+                ${item.name} <span style="font-size: 10px; font-weight:600; padding: 2px 6px; border-radius: 4px; background: var(--primary-light); color: var(--primary); margin-left: 6px;">${item.risk}</span>
+              </div>
+              <div style="font-size: 12px; line-height: 1.4;">
+                <strong>GWP (Volume Bisnis):</strong> ${formatCurrency(item.gwpRaw)}<br/>
+                <strong>Eksposur:</strong> ${formatCurrency(item.exposureRaw)}<br/>
+                <strong>Total Klaim:</strong> ${formatCurrency(item.claimsRaw)}<br/>
+                <strong>Jumlah Klaim:</strong> ${(item.claimCount || 0).toLocaleString('id-ID')}<br/>
+                <strong>Gross Loss Ratio:</strong> <span style="font-weight: 700; color: ${item.y >= lossRatioThreshold ? 'var(--color-critical)' : 'var(--color-stable)'}">${item.y}%</span>
+              </div>
+            </div>
+          `;
+        }
+      },
+      theme: { mode: chartMode }
+    };
+
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+    }
+    chartInstance.current = new ApexCharts(chartRef.current, options);
+    chartInstance.current.render();
 
     return () => {
       if (chartInstance.current) {
@@ -1242,6 +1542,28 @@ const OverviewSection = ({ data, theme }) => {
 
 // --- Component: Risk Matrix Section ---
 const RiskMatrixSection = ({ cobList, theme }) => {
+  const exposureThreshold = useMemo(
+    () => calculateMedian((cobList || []).map(item => item.exposure).filter(val => val > 0)),
+    [cobList]
+  );
+  const riskGroups = useMemo(() => {
+    const groups = {
+      "Critical Risk": [],
+      "Strategic Segment": [],
+      "Inefficient Segment": [],
+      "Stable Segment": []
+    };
+
+    (cobList || []).forEach(item => {
+      if (groups[item.riskCategory]) {
+        groups[item.riskCategory].push(item.cob);
+      }
+    });
+
+    Object.keys(groups).forEach(key => groups[key].sort());
+    return groups;
+  }, [cobList]);
+
   return (
     <div>
       <div className="executive-alert" style={{ backgroundColor: 'var(--primary-light)', borderLeftColor: 'var(--primary)', marginBottom: '1.5rem' }}>
@@ -1249,7 +1571,7 @@ const RiskMatrixSection = ({ cobList, theme }) => {
         <div className="executive-alert-content">
           <h4>Metodologi Pemetaan Profil Risiko (Step 9)</h4>
           <p style={{ color: 'var(--text-main)' }}>
-            Setiap Lini Bisnis / Class of Business (COB) diposisikan pada matriks 4 kuadran. Sumbu X menunjukkan <strong>Eksposur (Sum Insured)</strong> (Median: IDR 71.8 Triliun), Sumbu Y mewakili <strong>Gross Loss Ratio (%)</strong> (Ambang batas profitabilitas: 60%), dan ukuran gelembung melambangkan <strong>Gross Written Premium (GWP)</strong>. Gunakan hover pada gelembung untuk melihat detail metrik aktuaris.
+            Setiap Lini Bisnis / Class of Business (COB) diposisikan pada matriks 4 kuadran sesuai notebook Step 9. Sumbu X menunjukkan <strong>Eksposur (Sum Insured)</strong> dengan pemisah <strong>median eksposur COB sebesar {formatExposureCompact(exposureThreshold)}</strong>, sumbu Y mewakili <strong>Gross Loss Ratio (%)</strong> dengan ambang <strong>60%</strong>, dan ukuran gelembung melambangkan <strong>Gross Written Premium (GWP)</strong>. Gunakan hover pada gelembung untuk melihat detail metrik aktuaris.
           </p>
         </div>
       </div>
@@ -1272,7 +1594,7 @@ const RiskMatrixSection = ({ cobList, theme }) => {
               <h4 style={{ textAlign: 'center', margin: '5px 0 20px 0', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-title)' }}>
                 Peta Profil Risiko Portofolio AXA - Universitas Airlangga (Case 6)
               </h4>
-              <RiskBubbleChart cobList={cobList} theme={theme} />
+              <NotebookRiskBubbleChart cobList={cobList} theme={theme} />
             </div>
             
             <div className="risk-quadrant-legend">
@@ -1280,7 +1602,7 @@ const RiskMatrixSection = ({ cobList, theme }) => {
                 <div className="quad-indicator crit"></div>
                 <div className="quad-info">
                   <h5>Critical Risk (Kanan Atas)</h5>
-                  <p>Eksposur besar & merugi (Loss Ratio &gt; 60%). Butuh restrukturisasi tarif & underwriting mendesak. (COB 6, COB 4)</p>
+                  <p>Eksposur besar & merugi (Loss Ratio &gt; 60%). Butuh restrukturisasi tarif & underwriting mendesak. ({riskGroups["Critical Risk"].join(", ") || "-"})</p>
                 </div>
               </div>
               
@@ -1288,7 +1610,7 @@ const RiskMatrixSection = ({ cobList, theme }) => {
                 <div className="quad-indicator strat"></div>
                 <div className="quad-info">
                   <h5>Strategic Segment (Kanan Bawah)</h5>
-                  <p>Eksposur besar namun sangat menguntungkan. Fokus pertumbuhan pangsa pasar & pertahankan klien. (COB 9, COB 10, COB 1)</p>
+                  <p>Eksposur besar namun sangat menguntungkan. Fokus pertumbuhan pangsa pasar & pertahankan klien. ({riskGroups["Strategic Segment"].join(", ") || "-"})</p>
                 </div>
               </div>
               
@@ -1296,7 +1618,7 @@ const RiskMatrixSection = ({ cobList, theme }) => {
                 <div className="quad-indicator ineff"></div>
                 <div className="quad-info">
                   <h5>Inefficient Segment (Kiri Atas)</h5>
-                  <p>Volume bisnis kecil tapi merugikan. Perlu koreksi tarif premi atau perbaikan underwriting. (COB 7)</p>
+                  <p>Volume bisnis kecil tapi merugikan. Perlu koreksi tarif premi atau perbaikan underwriting. ({riskGroups["Inefficient Segment"].join(", ") || "-"})</p>
                 </div>
               </div>
               
@@ -1304,7 +1626,7 @@ const RiskMatrixSection = ({ cobList, theme }) => {
                 <div className="quad-indicator stab"></div>
                 <div className="quad-info">
                   <h5>Stable Segment (Kiri Bawah)</h5>
-                  <p>Volume bisnis kecil & menguntungkan. Menjaga kestabilan keuntungan margin asuransi. (COB 8, COB 5, COB 3, COB 2)</p>
+                  <p>Volume bisnis kecil & menguntungkan. Menjaga kestabilan keuntungan margin asuransi. ({riskGroups["Stable Segment"].join(", ") || "-"})</p>
                 </div>
               </div>
             </div>
