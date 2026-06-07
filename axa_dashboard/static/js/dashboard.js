@@ -106,7 +106,13 @@ const ClaimSeverityChart = ({ cobPortfolio, theme }) => {
         enabled: true,
         formatter: (val) => val.toFixed(0) + 'M',
         offsetY: -22,
-        style: { fontSize: '11px', fontWeight: 700, colors: [textColor] }
+        style: { fontSize: '11px', fontWeight: 600, colors: [textColor] },
+        background: {
+          enabled: false
+        },
+        dropShadow: {
+          enabled: false
+        }
       },
       xaxis: {
         categories: sorted.map(d => d.cob),
@@ -117,7 +123,13 @@ const ClaimSeverityChart = ({ cobPortfolio, theme }) => {
         labels: { formatter: (val) => val.toFixed(0) + 'M', style: { colors: textColor } }
       },
       colors: colors,
-      grid: { borderColor: borderColor },
+      grid: {
+        borderColor: borderColor,
+        padding: {
+          left: 18,
+          right: 12
+        }
+      },
       theme: { mode: chartMode },
       legend: { show: false },
       tooltip: {
@@ -143,9 +155,25 @@ const ClaimSeverityChart = ({ cobPortfolio, theme }) => {
           strokeDashArray: 4,
           label: {
             text: 'Rata-rata Portfolio',
-            position: 'left',
-            offsetX: 6,
-            style: { color: '#f59e0b', fontSize: '10px', background: 'transparent', border: 0 }
+            position: 'right',
+            offsetX: -10,
+            offsetY: -2,
+            textAnchor: 'end',
+            style: {
+              color: '#f59e0b',
+              fontSize: '10px',
+              fontWeight: 700,
+              background: bgColor,
+              borderColor: '#f59e0b',
+              borderWidth: 1,
+              borderRadius: 999,
+              padding: {
+                left: 8,
+                right: 8,
+                top: 3,
+                bottom: 3
+              }
+            }
           }
         }]
       }
@@ -159,7 +187,7 @@ const ClaimSeverityChart = ({ cobPortfolio, theme }) => {
   }, [cobPortfolio, activeCobs, theme]);
 
   return (
-    <div>
+    <div className="claim-severity-chart">
       <div className="filter-chips-row">
         <span className="filter-label">Filter COB:</span>
         <div
@@ -173,7 +201,6 @@ const ClaimSeverityChart = ({ cobPortfolio, theme }) => {
             onClick={() => toggleCob(cob)}
             style={activeCobs.includes(cob) ? { background: COB_COLORS[i % COB_COLORS.length], borderColor: COB_COLORS[i % COB_COLORS.length] } : {}}
           >
-            <span className="filter-chip-dot" style={{ background: COB_COLORS[i % COB_COLORS.length] }}></span>
             {cob}
           </div>
         ))}
@@ -1165,9 +1192,9 @@ const OverviewSection = ({ data, theme }) => {
         <div className="metric-card gradient-nwp">
           <div className="metric-header">
             <span className="metric-title">
-              Net Written Premium (NWP)
+              Net Premium
               <InfoTooltip 
-                title="Net Written Premium (NWP)" 
+                title="Net Premium" 
                 info="Pendapatan premi bersih setelah dikurangi porsi premi yang dialihkan/diserahkan ke reasuradur." 
                 formula="Gross Written Premium - Reinsurance Ceded Premium" 
                 left={true}
@@ -1245,9 +1272,9 @@ const OverviewSection = ({ data, theme }) => {
         <div className="metric-card gradient-net-claims">
           <div className="metric-header">
             <span className="metric-title">
-              Net Incurred Claims
+              Net Claim
               <InfoTooltip 
-                title="Net Incurred Claims" 
+                title="Net Claim" 
                 info="Beban klaim bersih yang ditanggung sendiri oleh AXA setelah dikurangi bagian klaim yang ditanggung oleh reasuradur." 
                 formula="Gross Incurred Claims - Reinsurance Recovery" 
                 left={true}
@@ -1289,7 +1316,7 @@ const OverviewSection = ({ data, theme }) => {
               <InfoTooltip 
                 title="Net Loss Ratio" 
                 info="Rasio beban klaim bersih terhadap premi bersih ditahan, mengukur kesehatan finansial portofolio setelah memperhitungkan reasuransi." 
-                formula="(Net Incurred Claims / Net Written Premium) * 100%" 
+                formula="(Net Claim / Net Premium) * 100%" 
                 left={false}
               />
             </span>
@@ -1308,17 +1335,17 @@ const OverviewSection = ({ data, theme }) => {
               Net UW Result
               <InfoTooltip 
                 title="Net Underwriting Result" 
-                info="Keuntungan atau kerugian teknis operasional asuransi setelah memperhitungkan premi bersih dan klaim bersih." 
-                formula="Net Written Premium - Net Incurred Claims" 
+                info="Keuntungan atau kerugian teknis underwriting setelah memperhitungkan premi bersih, klaim bersih, dan komisi bersih, sesuai definisi di notebook analisis." 
+                formula="Net Premium - Net Claim - Net Commission" 
                 left={false}
               />
             </span>
             <div className="metric-icon-box"><i className="fas fa-chart-line"></i></div>
           </div>
-          <div className="metric-value">{formatCurrency((data.overall.nwp || 0) - (data.overall.netIncurred || 0))}</div>
+          <div className="metric-value">{formatCurrency(data.overall.netUwResult || 0)}</div>
           <div className="metric-footer">
             <i className="fas fa-trophy trend-up"></i>
-            <span>NWP dikurangi Net Incurred Claims</span>
+            <span>Net Premium dikurangi Net Claim dan Net Commission</span>
           </div>
         </div>
       </div>
@@ -1380,7 +1407,7 @@ const OverviewSection = ({ data, theme }) => {
               <i className="fas fa-chart-column"></i> Perbandingan Profil Finansial (Gross vs Ceded vs Net)
               <InfoTooltip
                 title="Perbandingan Profil Finansial"
-                info="Visualisasi perbandingan keseluruhan nilai GWP, NWP, RWP (Premi diserahkan), Gross Claims, dan Net Claims untuk melihat struktur portofolio."
+                info="Visualisasi perbandingan keseluruhan nilai GWP, Net Premium, RWP (Premi diserahkan), Gross Claims, dan Net Claim untuk melihat struktur portofolio."
                 formula="Gross & Net Financial metrics comparison"
                 left={false}
               />
@@ -1775,7 +1802,7 @@ const DrillDownSection = ({ rawData }) => {
             {basis === 'gross' ? (
               <span><i className="fas fa-info-circle"></i> Rumus: Loss Ratio = Gross Claims / GWP (Premi Kotor)</span>
             ) : (
-              <span><i className="fas fa-info-circle"></i> Rumus: Loss Ratio = Net Claims / NWP (Premi Bersih setelah Reasuransi)</span>
+              <span><i className="fas fa-info-circle"></i> Rumus: Loss Ratio = Net Claim / Net Premium</span>
             )}
           </div>
         </div>
@@ -1854,9 +1881,9 @@ const DrillDownSection = ({ rawData }) => {
                   {hasBranch && <th>Cabang</th>}
                   {hasChannel && <th>Channel</th>}
                   {hasProduct && <th>Nama Produk</th>}
-                  <th>{basis === 'gross' ? 'GWP' : 'NWP (Premi Bersih)'}</th>
+                  <th>{basis === 'gross' ? 'GWP' : 'Net Premium'}</th>
                   <th>Eksposur (SI)</th>
-                  <th>{basis === 'gross' ? 'Gross Claims' : 'Net Claims'}</th>
+                  <th>{basis === 'gross' ? 'Gross Claims' : 'Net Claim'}</th>
                   <th>Jumlah Klaim</th>
                   <th>{basis === 'gross' ? 'Gross Loss Ratio' : 'Net Loss Ratio'}</th>
                   <th>Catatan &amp; Dampak Aktuaris</th>

@@ -14,11 +14,13 @@ FALLBACK_DATA = {
     "gwp": 2510719474050.44,
     "rwp": 546598216481.78,
     "nwp": 1964121257568.66,
+    "netCommission": 455622830172.62,
     "grossPaid": 1183397481372.40,
     "grossOS": 55484083656.07,
     "grossIncurred": 1238881565028.47,
     "riRecovery": 89128475259.40,
     "netIncurred": 1149753089769.06,
+    "netUwResult": 358745337626.98,
     "grossLossRatio": 49.34,
     "netLossRatio": 58.54,
     "reCededPct": 21.77,
@@ -28470,6 +28472,9 @@ def aggregate_excel_dataset(file_path):
     total_gwp = float(df_prem['GWP_IDR'].sum())
     total_rwp = float(df_prem['RWP_IDR'].sum())
     total_nwp = total_gwp - total_rwp
+    total_gross_commission = float(df_prem['GWC_IDR'].fillna(0).sum()) if 'GWC_IDR' in df_prem.columns else 0.0
+    total_reinsurance_commission = float(df_prem['RWC_IDR'].fillna(0).sum()) if 'RWC_IDR' in df_prem.columns else 0.0
+    total_net_commission = total_gross_commission - total_reinsurance_commission
     
     total_gross_paid = float(df_claim['GRS_ST_IDR'].sum())
     total_gross_os = float(df_claim['GRS_OS_IDR'].sum())
@@ -28480,16 +28485,19 @@ def aggregate_excel_dataset(file_path):
     total_ri_recovery = total_ri_paid + total_ri_os
 
     total_net_incurred = total_gross_incurred - total_ri_recovery
+    total_net_uw_result = total_nwp - total_net_incurred - total_net_commission
 
     overall = {
         "gwp": total_gwp,
         "rwp": total_rwp,
         "nwp": total_nwp,
+        "netCommission": total_net_commission,
         "grossPaid": total_gross_paid,
         "grossOS": total_gross_os,
         "grossIncurred": total_gross_incurred,
         "riRecovery": total_ri_recovery,
         "netIncurred": total_net_incurred,
+        "netUwResult": total_net_uw_result,
         "grossLossRatio": round((total_gross_incurred / total_gwp) * 100, 2),
         "netLossRatio": round((total_net_incurred / total_nwp) * 100, 2),
         "reCededPct": round((total_rwp / total_gwp) * 100, 2),
@@ -28740,6 +28748,31 @@ def aggregate_excel_dataset(file_path):
         "yearlyCob": yearly_cob_dict
     }
 
+
+def enrich_cached_overall_with_underwriting_fields(cached_data, excel_path=None):
+    overall = cached_data.setdefault("overall", {})
+    if "netCommission" in overall and "netUwResult" in overall:
+        return cached_data
+
+    net_commission = None
+    if excel_path and os.path.exists(excel_path):
+        try:
+            import pandas as pd
+
+            df_prem = pd.read_excel(excel_path, sheet_name='Raw Premium', usecols=['GWC_IDR', 'RWC_IDR'])
+            gross_commission = float(df_prem['GWC_IDR'].fillna(0).sum()) if 'GWC_IDR' in df_prem.columns else 0.0
+            reinsurance_commission = float(df_prem['RWC_IDR'].fillna(0).sum()) if 'RWC_IDR' in df_prem.columns else 0.0
+            net_commission = gross_commission - reinsurance_commission
+        except Exception as e:
+            print(f"Failed to enrich cache from Excel commission fields: {e}")
+
+    if net_commission is None:
+        net_commission = FALLBACK_DATA["overall"]["netCommission"]
+
+    overall["netCommission"] = net_commission
+    overall["netUwResult"] = float(overall.get("nwp", 0)) - float(overall.get("netIncurred", 0)) - net_commission
+    return cached_data
+
 # --- C. Web Server API Endpoints ---
 
 @app.route('/')
@@ -28748,18 +28781,20 @@ def index_route():
 
 @app.route('/api/portfolio')
 def api_portfolio():
+    excel_path = os.path.join(os.path.dirname(__file__), "..", "Study Case for Univ Airlangga 2026 _Actuarial AXA (Sent 2026.05.26).xlsx")
+
     # Attempt to load cached JSON data
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 cached_data = json.load(f)
-            return jsonify(cached_data)
+            enriched_data = enrich_cached_overall_with_underwriting_fields(cached_data, excel_path)
+            with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump(enriched_data, f, ensure_ascii=False, indent=2)
+            return jsonify(enriched_data)
         except Exception as e:
             print(f"Error reading cache file, regenerating: {e}")
 
-    # Fallback to check Excel dataset in parent directory
-    excel_path = os.path.join(os.path.dirname(__file__), "..", "Study Case for Univ Airlangga 2026 _Actuarial AXA (Sent 2026.05.26).xlsx")
-    
     if os.path.exists(excel_path):
         try:
             aggregated_data = aggregate_excel_dataset(excel_path)
