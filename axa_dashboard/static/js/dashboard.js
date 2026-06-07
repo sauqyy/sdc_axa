@@ -1593,7 +1593,7 @@ const RiskMatrixSection = ({ cobList, theme }) => {
 
   return (
     <div>
-      <div className="executive-alert" style={{ backgroundColor: 'var(--primary-light)', borderLeftColor: 'var(--primary)', marginBottom: '1.5rem' }}>
+      <div className="executive-alert" style={{ backgroundColor: 'var(--primary-light)', marginBottom: '1.5rem' }}>
         <div className="executive-alert-icon" style={{ color: 'var(--primary)' }}><i className="fas fa-circle-info"></i></div>
         <div className="executive-alert-content">
           <h4>Metodologi Pemetaan Profil Risiko (Step 9)</h4>
@@ -2571,7 +2571,7 @@ const ReinsuranceEfficacyChart = ({ cobShares, theme }) => {
 const ConcentrationSection = ({ data, theme }) => {
   return (
     <div>
-      <div className="executive-alert" style={{ backgroundColor: 'var(--primary-light)', borderLeftColor: 'var(--primary)', marginBottom: '1.5rem' }}>
+      <div className="executive-alert" style={{ backgroundColor: 'var(--primary-light)', marginBottom: '1.5rem' }}>
         <div className="executive-alert-icon" style={{ color: 'var(--primary)' }}><i className="fas fa-circle-info"></i></div>
         <div className="executive-alert-content">
           <h4>Analisis Tren &amp; Konsentrasi Risiko Portofolio</h4>
