@@ -1,5 +1,16 @@
 // AXA Actuarial Risk Portfolio - React Dashboard Application
 const { useState, useEffect, useRef, useMemo } = React;
+const VALID_TABS = new Set(["dashboard", "matrix", "concentration", "drilldown", "strategy", "glossary"]);
+
+function getInitialTab() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    return VALID_TABS.has(tab) ? tab : "dashboard";
+  } catch (error) {
+    return "dashboard";
+  }
+}
 
 // --- Helper: Currency Formatter ---
 function formatCurrency(val) {
@@ -757,8 +768,10 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
     const thresholdLog = Math.log10(exposureThreshold);
     const leftMidX = (xMin + thresholdLog) / 2;
     const rightMidX = (thresholdLog + xMax) / 2;
-    const topMidY = (lossRatioThreshold + 110) / 2;
-    const bottomMidY = lossRatioThreshold / 2;
+    const topHeadlineY = 99;
+    const topSubtitleY = 95;
+    const lowerQuadrantHeadlineY = 48;
+    const lowerQuadrantSubtitleY = 44.5;
 
     const palette = {
       "Critical Risk": "#e74c3c",
@@ -800,17 +813,18 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
         { name: 'Inefficient Segment (Low Exposure, High Loss)', data: seriesMap["Inefficient Segment"] }
       ],
       chart: {
-        height: 420,
+        height: 500,
         type: 'bubble',
         toolbar: { show: true },
         background: 'transparent',
         foreColor: textColor,
-        fontFamily: "'Inter', 'Nunito', sans-serif"
+        fontFamily: "'Inter', 'Nunito', sans-serif",
+        offsetY: 8
       },
       plotOptions: {
         bubble: {
-          minBubbleRadius: 14,
-          maxBubbleRadius: 42
+          minBubbleRadius: 12,
+          maxBubbleRadius: 34
         }
       },
       stroke: {
@@ -818,22 +832,21 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
         colors: isDark ? ['#1f2937'] : ['#ffffff']
       },
       dataLabels: {
-        enabled: false,
+        enabled: true,
+        formatter: function (_val, opt) {
+          const name = opt.w.config.series?.[opt.seriesIndex]?.data?.[opt.dataPointIndex]?.name || "";
+          const match = name.match(/COB\s*(\d+)/i);
+          return match ? match[1] : "";
+        },
+        offsetY: 1,
         style: {
-          fontSize: '11px',
+          fontSize: '12px',
           fontFamily: "'Inter', sans-serif",
           fontWeight: 800,
-          colors: [isDark ? '#e2e8f0' : '#0f172a']
+          colors: ['#ffffff']
         },
         background: {
-          enabled: true,
-          foreColor: isDark ? '#e2e8f0' : '#0f172a',
-          padding: 4,
-          borderRadius: 3,
-          borderWidth: 1,
-          borderColor: '#94a3b8',
-          opacity: 0.95,
-          backgroundColor: isDark ? '#0f172a' : '#ffffff'
+          enabled: false
         }
       },
       fill: { opacity: 0.85 },
@@ -844,13 +857,16 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
         tickAmount: Math.max(4, Math.ceil(xMax - xMin)),
         title: {
           text: 'Eksposur / Sum Insured (Skala Logaritmik, IDR)',
+          offsetY: 10,
           style: { fontSize: '13px', fontWeight: 700, color: textColor }
         },
         labels: {
           show: true,
+          trim: false,
+          hideOverlappingLabels: false,
           style: {
             colors: textColor,
-            fontSize: '11px',
+            fontSize: '10px',
             fontFamily: "'Inter', sans-serif",
             fontWeight: 600
           },
@@ -873,13 +889,14 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
         tickAmount: 6,
         title: {
           text: 'Gross Loss Ratio (%)',
+          offsetX: -8,
           style: { fontSize: '13px', fontWeight: 700, color: textColor }
         },
         labels: {
           show: true,
           style: {
             colors: textColor,
-            fontSize: '11px',
+            fontSize: '10px',
             fontFamily: "'Inter', sans-serif",
             fontWeight: 600
           },
@@ -900,7 +917,15 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
         palette["Stable Segment"],
         palette["Inefficient Segment"]
       ],
-      grid: { borderColor: borderColor },
+      grid: {
+        borderColor: borderColor,
+        padding: {
+          top: 24,
+          right: 30,
+          bottom: 12,
+          left: 52
+        }
+      },
       annotations: {
         position: 'front',
         yaxis: [{
@@ -912,9 +937,9 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
             borderColor: 'transparent',
             style: { color: '#64748b', background: 'transparent', fontSize: '10px', fontWeight: 700 },
             text: `Loss Ratio Threshold (${lossRatioThreshold}%)`,
-            position: 'left',
-            offsetX: 10,
-            offsetY: -8
+            position: 'right',
+            offsetX: -2,
+            offsetY: -6
           }
         }],
         xaxis: [{
@@ -928,51 +953,19 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
             style: { color: '#64748b', background: 'transparent', fontSize: '10px', fontWeight: 700 },
             text: `Median Exposure (${formatExposureCompact(exposureThreshold)})`,
             position: 'top',
-            offsetX: -10,
-            offsetY: 10
+            offsetX: 20,
+            offsetY: 2
           }
         }],
         points: [
-          { x: leftMidX, y: topMidY + 5, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#f97316' : '#ea580c', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'INEFFICIENT SEGMENT' } },
-          { x: leftMidX, y: topMidY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(Low Exposure, High Loss)' } },
-          { x: rightMidX, y: topMidY + 5, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#f43f5e' : '#e11d48', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'CRITICAL RISK' } },
-          { x: rightMidX, y: topMidY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(High Exposure, High Loss)' } },
-          { x: leftMidX, y: bottomMidY + 5, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#38bdf8' : '#0284c7', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'STABLE SEGMENT' } },
-          { x: leftMidX, y: bottomMidY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(Low Exposure, Low Loss)' } },
-          { x: rightMidX, y: bottomMidY + 5, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#34d399' : '#16a34a', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'STRATEGIC SEGMENT' } },
-          { x: rightMidX, y: bottomMidY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(High Exposure, Low Loss)' } },
-          ...cobList.map(item => {
-            const offsets = {
-              "COB 6": { offsetX: 18, offsetY: -10 },
-              "COB 4": { offsetX: -18, offsetY: 8 },
-              "COB 9": { offsetX: 14, offsetY: -8 },
-              "COB 10": { offsetX: 14, offsetY: -8 },
-              "COB 1": { offsetX: -14, offsetY: -8 },
-              "COB 8": { offsetX: 14, offsetY: -8 },
-              "COB 5": { offsetX: -14, offsetY: -8 },
-              "COB 3": { offsetX: 0, offsetY: 14 },
-              "COB 2": { offsetX: 14, offsetY: -8 },
-              "COB 7": { offsetX: 0, offsetY: 14 }
-            }[item.cob] || { offsetX: 0, offsetY: -8 };
-
-            return {
-              x: parseFloat(Math.log10(item.exposure).toFixed(4)),
-              y: parseFloat(item.lossRatio.toFixed(2)),
-              marker: { size: 0 },
-              label: {
-                text: item.cob,
-                offsetX: offsets.offsetX,
-                offsetY: offsets.offsetY,
-                borderColor: '#94a3b8',
-                style: {
-                  color: isDark ? '#e2e8f0' : '#0f172a',
-                  background: isDark ? '#0f172a' : '#ffffff',
-                  fontSize: '10px',
-                  fontWeight: 800
-                }
-              }
-            };
-          })
+          { x: xMin + 0.42, y: topHeadlineY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#f97316' : '#ea580c', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'INEFFICIENT SEGMENT' } },
+          { x: xMin + 0.52, y: topSubtitleY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(Low Exposure, High Loss)' } },
+          { x: xMax - 0.24, y: topHeadlineY, marker: { size: 0 }, label: { borderColor: 'transparent', textAnchor: 'end', offsetX: -8, style: { color: isDark ? '#f43f5e' : '#e11d48', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'CRITICAL RISK' } },
+          { x: xMax - 0.24, y: topSubtitleY, marker: { size: 0 }, label: { borderColor: 'transparent', textAnchor: 'end', offsetX: -8, style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(High Exposure, High Loss)' } },
+          { x: xMin + 0.42, y: lowerQuadrantHeadlineY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#38bdf8' : '#0284c7', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'STABLE SEGMENT' } },
+          { x: xMin + 0.5, y: lowerQuadrantSubtitleY, marker: { size: 0 }, label: { borderColor: 'transparent', style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(Low Exposure, Low Loss)' } },
+          { x: xMax - 0.24, y: lowerQuadrantHeadlineY, marker: { size: 0 }, label: { borderColor: 'transparent', textAnchor: 'end', offsetX: -8, style: { color: isDark ? '#34d399' : '#16a34a', background: 'transparent', fontSize: '11px', fontWeight: 800 }, text: 'STRATEGIC SEGMENT' } },
+          { x: xMax - 0.24, y: lowerQuadrantSubtitleY, marker: { size: 0 }, label: { borderColor: 'transparent', textAnchor: 'end', offsetX: -8, style: { color: isDark ? '#9ca3af' : '#64748b', background: 'transparent', fontSize: '9px', fontWeight: 600 }, text: '(High Exposure, Low Loss)' } }
         ]
       },
       legend: { show: false },
@@ -1593,16 +1586,6 @@ const RiskMatrixSection = ({ cobList, theme }) => {
 
   return (
     <div>
-      <div className="executive-alert" style={{ backgroundColor: 'var(--primary-light)', marginBottom: '1.5rem' }}>
-        <div className="executive-alert-icon" style={{ color: 'var(--primary)' }}><i className="fas fa-circle-info"></i></div>
-        <div className="executive-alert-content">
-          <h4>Metodologi Pemetaan Profil Risiko (Step 9)</h4>
-          <p style={{ color: 'var(--text-main)' }}>
-            Setiap Lini Bisnis / Class of Business (COB) diposisikan pada matriks 4 kuadran sesuai notebook Step 9. Sumbu X menunjukkan <strong>Eksposur (Sum Insured)</strong> dengan pemisah <strong>median eksposur COB sebesar {formatExposureCompact(exposureThreshold)}</strong>, sumbu Y mewakili <strong>Gross Loss Ratio (%)</strong> dengan ambang <strong>60%</strong>, dan ukuran gelembung melambangkan <strong>Gross Written Premium (GWP)</strong>. Gunakan hover pada gelembung untuk melihat detail metrik aktuaris.
-          </p>
-        </div>
-      </div>
-
       <div className="card">
         <div className="card-header">
           <h3>
@@ -1618,7 +1601,7 @@ const RiskMatrixSection = ({ cobList, theme }) => {
         <div className="card-body">
           <div className="risk-matrix-layout">
             <div className="chart-wrapper">
-              <h4 style={{ textAlign: 'center', margin: '5px 0 20px 0', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-title)' }}>
+              <h4 className="matrix-title">
                 Peta Profil Risiko Portofolio AXA - Universitas Airlangga (Case 6)
               </h4>
               <NotebookRiskBubbleChart cobList={cobList} theme={theme} />
@@ -1658,6 +1641,16 @@ const RiskMatrixSection = ({ cobList, theme }) => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="executive-alert methodology-card">
+        <div className="executive-alert-icon"><i className="fas fa-circle-info"></i></div>
+        <div className="executive-alert-content">
+          <h4>Metodologi Pemetaan Profil Risiko (Step 9)</h4>
+          <p>
+            Setiap Lini Bisnis / Class of Business (COB) diposisikan pada matriks 4 kuadran sesuai notebook Step 9. Sumbu X menunjukkan <strong>Eksposur (Sum Insured)</strong> dengan pemisah <strong>median eksposur COB sebesar {formatExposureCompact(exposureThreshold)}</strong>, sumbu Y mewakili <strong>Gross Loss Ratio (%)</strong> dengan ambang <strong>60%</strong>, dan ukuran gelembung melambangkan <strong>Gross Written Premium (GWP)</strong>. Gunakan hover pada gelembung untuk melihat detail metrik aktuaris.
+          </p>
         </div>
       </div>
     </div>
@@ -2892,7 +2885,7 @@ const GlossarySection = ({ glossary }) => {
 
 // --- Component: Main Application ---
 const App = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
