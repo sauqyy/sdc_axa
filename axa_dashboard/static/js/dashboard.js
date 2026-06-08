@@ -889,7 +889,7 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
         tickAmount: 6,
         title: {
           text: 'Gross Loss Ratio (%)',
-          offsetX: -8,
+          offsetX: 2,
           style: { fontSize: '13px', fontWeight: 700, color: textColor }
         },
         labels: {
@@ -923,7 +923,7 @@ const NotebookRiskBubbleChart = ({ cobList, theme }) => {
           top: 24,
           right: 30,
           bottom: 12,
-          left: 52
+          left: 78
         }
       },
       annotations: {
